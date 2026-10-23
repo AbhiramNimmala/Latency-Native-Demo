@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Gap — Latency-Native Media</title>
+<meta name="description" content="An interactive piece on how communication delay breaks shared experience across space — from 'Latency-Native Media.'">
+<style>
+  :root{
+    --bg:#070b12; --surface:#0d1420; --raise:#141d2d; --line:#213049;
+    --ink:#E9EFF9; --muted:#8a97ad; --accent:#7AA7FF; --signal:#FF9A57; --gold:#ffd27a; --green:#6fe0a8;
+    --earth:#6fb0ff; --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  .wrap{max-width:1060px;margin:0 auto;padding:34px 20px 70px}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.24em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;opacity:0;animation:fade .8s .1s forwards}
+  h1{font-size:clamp(34px,6vw,58px);line-height:1.0;letter-spacing:-.03em;font-weight:680;margin-bottom:14px;opacity:0;animation:fade .8s .25s forwards}
+  .thesis{color:#aeb9cc;font-size:clamp(15px,1.8vw,17.5px);max-width:62ch;margin-bottom:24px;opacity:0;animation:fade .8s .4s forwards}
+  .thesis b{color:var(--ink);font-weight:600}
+  @keyframes fade{to{opacity:1}}
+  .destbar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+  .destbar button{background:var(--surface);border:1px solid var(--line);color:var(--muted);padding:8px 14px;border-radius:999px;font-family:var(--mono);font-size:12px;cursor:pointer;transition:.15s}
+  .destbar button[aria-pressed=true]{border-color:var(--accent);color:var(--ink);background:var(--raise)}
+  .destbar button:hover{color:var(--ink)}
+  .destbar .ms{font-size:10px;opacity:.7;margin-left:6px}
+  .stage{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 30px 80px -40px rgba(0,0,0,.8)}
+  canvas{display:block;width:100%;height:auto;background:#05080e;cursor:crosshair}
+  .overlay{position:absolute;top:14px;left:16px;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);pointer-events:none}
+  .overlay .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--signal);margin-right:6px;animation:blink 1.4s infinite}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+  .readout{display:flex;flex-wrap:wrap;gap:9px 24px;align-items:center;padding:13px 18px;border-top:1px solid var(--line);font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+  .readout b{color:var(--ink);font-weight:600} .readout .hot{color:var(--signal)}
+  .controls{display:flex;flex-wrap:wrap;gap:14px 20px;align-items:center;padding:15px 18px;border-top:1px solid var(--line)}
+  .slider{flex:1;min-width:220px}
+  .slider label{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:8px}
+  input[type=range]{width:100%;accent-color:var(--accent)}
+  .seg{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+  .seg button{background:transparent;color:var(--muted);border:0;padding:8px 13px;font-family:var(--mono);font-size:11.5px;cursor:pointer;transition:background .15s}
+  .seg button[aria-pressed=true]{background:var(--accent);color:#05080e;font-weight:600}
+  .seg button:hover{color:var(--ink)}
+  .convo{margin-top:18px;background:var(--surface);border:1px solid var(--line);border-radius:18px;overflow:hidden}
+  .conv-h{display:flex;justify-content:space-between;align-items:center;padding:12px 14px 12px 18px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:12px;color:var(--muted);gap:10px;flex-wrap:wrap}
+  .modeToggle{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+  .modeToggle button{background:transparent;border:0;color:var(--muted);padding:7px 13px;font-family:var(--mono);font-size:11px;cursor:pointer}
+  .modeToggle button[aria-pressed=true]{background:var(--green);color:#05080e;font-weight:600}
+  .modeToggle button.live[aria-pressed=true]{background:var(--signal)}
+  .modebanner{font-family:var(--mono);font-size:11.5px;color:var(--muted);padding:10px 18px;border-bottom:1px solid var(--line);background:rgba(111,224,168,.04)}
+  .modebanner b{color:var(--green)}
+  .feed{height:320px;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:12px;scroll-behavior:smooth}
+  .feed::-webkit-scrollbar{width:8px}.feed::-webkit-scrollbar-thumb{background:var(--line);border-radius:8px}
+  .msg{max-width:78%;padding:10px 13px;border-radius:14px;font-size:14.5px;position:relative;animation:rise .35s cubic-bezier(.2,.9,.3,1)}
+  @keyframes rise{from{opacity:0;transform:translateY(9px) scale(.98)}to{opacity:1;transform:none}}
+  .msg .stamp{display:block;font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:5px;letter-spacing:.02em}
+  .msg .cap{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--green);margin-bottom:5px;opacity:.85}
+  .me{align-self:flex-end;background:linear-gradient(180deg,rgba(111,176,255,.18),rgba(111,176,255,.1));border:1px solid rgba(111,176,255,.38)}
+  .them{align-self:flex-start;background:linear-gradient(180deg,rgba(255,138,86,.15),rgba(255,138,86,.08));border:1px solid rgba(255,138,86,.34)}
+  .them .stamp .late{color:var(--signal)}
+  .native .me,.native .them{border-style:dashed}
+  .sunrise{align-self:center;background:linear-gradient(180deg,rgba(255,210,122,.16),transparent);border:1px solid rgba(255,210,122,.4);color:var(--gold);text-align:center;font-size:13.5px;max-width:86%}
+  .sys{align-self:center;color:var(--muted);font-family:var(--mono);font-size:11.5px;text-align:center;max-width:90%}
+  .composer{display:flex;gap:10px;padding:14px 18px;border-top:1px solid var(--line)}
+  .composer input{flex:1;background:var(--raise);border:1px solid var(--line);border-radius:11px;color:var(--ink);padding:11px 14px;font-size:14.5px;font-family:var(--sans)}
+  .composer input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(122,167,255,.12)}
+  .btn{background:var(--accent);color:#05080e;border:0;border-radius:11px;padding:0 18px;font-weight:600;font-size:14px;cursor:pointer;font-family:var(--sans);transition:transform .1s,filter .15s}
+  .btn:hover{filter:brightness(1.08)} .btn:active{transform:scale(.97)}
+  .btn.ghost{background:transparent;color:var(--muted);border:1px solid var(--line)}
+  .btn.gold{background:transparent;color:var(--gold);border:1px solid rgba(255,210,122,.4)}
+  .insight{margin-top:24px;background:linear-gradient(180deg,rgba(122,167,255,.06),transparent);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:14px;padding:20px 22px}
+  .insight h3{font-size:13px;font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin-bottom:10px}
+  .insight p{color:#aeb9cc;font-size:14.5px;max-width:72ch} .insight p+p{margin-top:10px} .insight b{color:var(--ink)}
+  footer{margin-top:28px;color:var(--muted);font-size:12.5px;font-family:var(--mono);line-height:1.7}
+  footer a{color:var(--accent);text-decoration:none}
+  @media(max-width:620px){.msg{max-width:90%}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Latency-Native Media &middot; interactive</div>
+  <h1>The&nbsp;Gap</h1>
+  <p class="thesis">On Earth, a conversation is two people taking turns. Across space it isn't — light is too slow. <b>Pick a destination, then try to talk.</b> Near the Moon you barely notice. At Mars it breaks. Past Jupiter it's hopeless. Find where sharing a <i>now</i> becomes physically impossible — then flip to <b>latency-native</b> mode and watch media get redesigned around the gap.</p>
+
+  <div class="destbar" id="destbar" role="group" aria-label="Destination">
+    <button data-dest="moon"    aria-pressed="false">the Moon <span class="ms">1.3 s</span></button>
+    <button data-dest="mars"    aria-pressed="true">Mars <span class="ms">3–22 min</span></button>
+    <button data-dest="jupiter" aria-pressed="false">Jupiter <span class="ms">33–53 min</span></button>
+    <button data-dest="proxima" aria-pressed="false">Proxima b <span class="ms">4.2 yr</span></button>
+  </div>
+
+  <div class="stage">
+    <canvas id="sky" width="1020" height="420" aria-label="Earth and the chosen destination; messages cross the gap between them"></canvas>
+    <div class="overlay"><span class="dot"></span><span id="o-sep">—</span></div>
+    <div class="readout">
+      <span>SEPARATION <b id="r-dist">—</b></span>
+      <span>ONE-WAY LIGHT TIME <b class="hot" id="r-delay">—</b></span>
+      <span>ROUND TRIP <b id="r-round">—</b></span>
+      <span id="r-clock">MISSION T+00:00</span>
+    </div>
+    <div class="controls">
+      <div class="slider">
+        <label id="phaseLabel">Orbital phase &mdash; drag the planets around the Sun</label>
+        <input type="range" id="phase" min="0" max="100" step="0.1" value="30">
+      </div>
+      <div class="seg" role="group" aria-label="Orbit speed">
+        <button data-orb="0" aria-pressed="false">pause</button>
+        <button data-orb="1" aria-pressed="true">drift</button>
+        <button data-orb="8" aria-pressed="false">fast</button>
+      </div>
+      <div class="seg" role="group" aria-label="Time compression">
+        <button data-comp="60" aria-pressed="true">time &times;60</button>
+        <button data-comp="600" aria-pressed="false">&times;600</button>
+      </div>
+      <button class="btn ghost" id="sound" aria-pressed="false">&#128264; sound</button>
+    </div>
+  </div>
+
+  <div class="convo" id="convo">
+    <div class="conv-h">
+      <span><span style="color:var(--earth)">&#9679;</span> You, on Earth &nbsp;&harr;&nbsp; <span id="who">Ava</span>, on <span id="whereName">Mars</span></span>
+      <div class="modeToggle" role="group" aria-label="Media mode">
+        <button class="live" data-mode="live" aria-pressed="true">Live chat</button>
+        <button data-mode="native" aria-pressed="false">Latency-native</button>
+      </div>
+    </div>
+    <div class="modebanner" id="modebanner"><b>Live chat.</b> Two people trying to take turns across the gap. Watch it desync.</div>
+    <div class="feed" id="feed"></div>
+    <div class="composer">
+      <input id="input" type="text" placeholder="Say something…" autocomplete="off" maxlength="160">
+      <button class="btn" id="send">Send</button>
+      <button class="btn gold" id="share" title="Share a live moment">&#9728; moment</button>
+      <button class="btn ghost" id="reset">Reset</button>
+    </div>
+  </div>
+
+  <div class="insight">
+    <h3>Why it falls apart — and what you build instead</h3>
+    <p>At Mars's farthest a word takes <b>over 22 minutes</b> to arrive and 22 more to answer. By the time a reply reaches you, you've said three more things; by the time they're heard, they answer a question you've forgotten asking. Push out to Jupiter or Proxima and even that collapses — there is no "now" two places can share. Turn-taking, the thing a conversation is made of, becomes physically impossible.</p>
+    <p>That's the point of <b>latency-native media</b>, and it's the second toggle above. When you can't share a moment, you stop trying — and design for it. Messages become <b>self-contained capsules</b>: each carries its own context, expects to arrive out of order, and never asks to be answered <i>now</i>, because <i>now</i> doesn't exist across the gap. The frustration you feel in Live mode <i>is</i> the design brief.</p>
+  </div>
+
+  <footer>
+    From <b>&ldquo;Latency-Native Media: Designing Shared Experience for an Interplanetary Civilization.&rdquo;</b><br>
+    Bodies sit at true relative distances; one-way time = separation &divide; the speed of light. Time is compressed so you don't wait the full delay.
+    &nbsp;&middot;&nbsp; Abhiram Nimmala &middot; <a href="https://abhiramnimmala.github.io">abhiramnimmala.github.io</a>
+  </footer>
+</div>
+
+<script>
+const C=299792.458, AU=149.6e6;
+const cv=document.getElementById('sky'), x=cv.getContext('2d');
+const $=id=>document.getElementById(id);
+const REDUCE=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const DEST={
+  moon:   {label:"the Moon", who:"Dao",  R:0.00257, sun:false, fixedKm:384400},
+  mars:   {label:"Mars",     who:"Ava",  R:1.524,   sun:true},
+  jupiter:{label:"Jupiter",  who:"Rhea", R:5.203,   sun:true},
+  proxima:{label:"Proxima b",who:"the relay buoy", R:null, sun:true, star:true, fixedKm:4.0113e13},
+};
+let dest='mars', mode='live';
+let COMP=60, orbSpeed=1, phase=0.30, orbT=0, t=0, lastReal=performance.now();
+let msgs=[], flights=[], scheduled=[], spontIdx=0, replyIdx=0, msgId=0, started=false;
+let sound=false, actx=null;
+
+const stars=[]; for(let i=0;i<150;i++) stars.push({x:Math.random(),y:Math.random(),r:Math.random()*1.3+.3,tw:Math.random()*6.28,sp:.2+Math.random()*.8});
+
+const SPONT={
+  live:["Morning from here. The dust finally settled — the sky goes butterscotch at dawn.",
+        "It's so quiet on this end. Are you there, or is that just the gap?",
+        "I keep answering things and then wondering if they ever land."],
+  native:["Capsule &middot; The storm cleared at dawn; sky went butterscotch. No reply needed — just didn't want it to pass unshared.",
+          "Capsule &middot; Read your last three out of order. Answered all of them in this one: yes, later, and I missed you too.",
+          "Capsule &middot; Logging the quiet. I stopped waiting for 'now.' It's better this way."]
+};
+const REPLIES=["Wait — which one did you mean? Two of yours arrived at once.",
+  "That question got here nine minutes old. The answer's changed.",
+  "I already said yes — did it not reach you yet?",
+  "We're talking over each other. Or I am. Hard to tell from this far.",
+  "By the time you read this you'll have said three more things. Hi to all of them."];
+
+function angles(){const d=DEST[dest],p=orbT+phase*2;const aE=p*2*Math.PI/1+0.6;
+  const Td=d.R?Math.pow(d.R,1.5):1;const aD=p*2*Math.PI/(Td||1)-0.4;return {aE,aD};}
+function sepKm(){const d=DEST[dest];if(d.fixedKm)return d.fixedKm;
+  const {aE,aD}=angles();return Math.sqrt(1+d.R*d.R-2*d.R*Math.cos(aD-aE))*AU;}
+function oneWay(){return sepKm()/C;}
+function fmtClock(s){s=Math.max(0,Math.round(s));const m=Math.floor(s/60);return m+":"+String(s%60).padStart(2,'0');}
+function fmtDelay(s){
+  if(s<90) return s.toFixed(1)+" s";
+  if(s<3600){const m=Math.floor(s/60),sec=Math.round(s%60);return m+" min "+String(sec).padStart(2,'0')+" s";}
+  if(s<86400*40){const h=Math.floor(s/3600),m=Math.round(s%3600/60);return h+" h "+m+" min";}
+  return (s/ (86400*365.25)).toFixed(2)+" years";
+}
+function fmtAgo(s){ return s<90 ? s.toFixed(0)+" s" : fmtDelay(s); }
+
+function beep(f,d,v){if(!sound)return;try{if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();
+  const o=actx.createOscillator(),g=actx.createGain();o.frequency.value=f;o.type='sine';o.connect(g);g.connect(actx.destination);
+  g.gain.setValueAtTime(0,actx.currentTime);g.gain.linearRampToValueAtTime(v||.05,actx.currentTime+.01);
+  g.gain.exponentialRampToValueAtTime(.0001,actx.currentTime+(d||.25));o.start();o.stop(actx.currentTime+(d||.25));}catch(e){}}
+
+function posEarth(){const {aE}=angles(),W=cv.width,H=cv.height,cx=sceneCx(),cy=H/2,s=orbScale();
+  if(!DEST[dest].sun) return {x:W*0.24,y:H/2};
+  return {x:cx+Math.cos(aE)*1*s, y:cy+Math.sin(aE)*1*s*0.62};}
+function posDest(){const d=DEST[dest],{aD,aE}=angles(),W=cv.width,H=cv.height,cx=sceneCx(),cy=H/2,s=orbScale();
+  if(d.star) return {x:W*0.9, y:H*0.3};
+  if(!d.sun){ // moon orbits Earth
+    const e=posEarth();return {x:e.x+Math.cos(aD*6)*46, y:e.y+Math.sin(aD*6)*30};}
+  return {x:cx+Math.cos(aD)*d.R*s, y:cy+Math.sin(aD)*d.R*s*0.62};}
+function sceneCx(){return DEST[dest].star?cv.width*0.30:cv.width/2;}
+function orbScale(){const d=DEST[dest];const big=d.star?1.3:(d.R||1);return Math.min(cv.width,cv.height)/2/big*0.8;}
+
+function send(text,kind){const d=oneWay(),p0=posEarth();
+  const m={id:++msgId,from:'me',kind:kind||'chat',text,tSent:t,tArrive:t+d,shown:false,acked:false,arrive:t+d};
+  msgs.push(m);flights.push({from:'me',tSent:t,tArrive:t+d,kind:m.kind,p0});beep(560,.18,.05);render();}
+function themSend(text){const d=oneWay(),p0=posDest();
+  msgs.push({id:++msgId,from:'them',kind:'chat',text,tSent:t,tArrive:t+d,shown:false});
+  flights.push({from:'them',tSent:t,tArrive:t+d,kind:'chat',p0});}
+function moment(){const d=oneWay(),p0=posEarth();
+  flights.push({from:'me',tSent:t,tArrive:t+d,kind:'sunrise',p0});
+  msgs.push({id:++msgId,from:'me',kind:'sunrise',tSent:t,tArrive:t+d,shown:false,arrive:t+d,arrived:false});beep(760,.5,.05);render();}
+function schedule(at,text){scheduled.push({at,text});}
+
+function loop(now){const dt=Math.min(0.05,(now-lastReal)/1000);lastReal=now;t+=dt*COMP;if(!REDUCE)orbT+=dt*orbSpeed*0.012;
+  const SP=SPONT[mode];
+  while(spontIdx<SP.length && t>=[6,230,560][spontIdx]){themSend(SP[spontIdx]);spontIdx++;}
+  if(mode==='live'){
+    for(const m of msgs) if(m.from==='me'&&m.kind==='chat'&&!m.acked&&t>=m.tArrive){m.acked=true;schedule(m.tArrive+20+Math.random()*25,REPLIES[replyIdx++%REPLIES.length]);}
+  }
+  for(let i=scheduled.length-1;i>=0;i--) if(t>=scheduled[i].at){themSend(scheduled[i].text);scheduled.splice(i,1);}
+  let ch=false;
+  for(const m of msgs){const vis=m.from==='me'?t>=m.tSent:t>=m.tArrive;if(vis&&!m.shown){m.shown=true;ch=true;if(m.from==='them')beep(340,.3,.045);}
+    if(m.kind==='sunrise'&&!m.arrived&&t>=m.arrive){m.arrived=true;ch=true;beep(880,.6,.05);}}
+  if(ch)render();draw();requestAnimationFrame(loop);}
+
+function render(){const feed=$('feed');feed.classList.toggle('native',mode==='native');feed.innerHTML='';
+  const vis=msgs.filter(m=>m.shown);
+  if(!vis.length){feed.innerHTML='<div class="sys">'+(mode==='native'?'Compose a capsule. It carries its own context and never waits for a reply.':'Say something. It will take time to get there.')+'</div>';}
+  vis.sort((a,b)=>(a.from==='me'?a.tSent:a.tArrive)-(b.from==='me'?b.tSent:b.tArrive));
+  for(const m of vis){const el=document.createElement('div');
+    if(m.kind==='sunrise'){el.className='msg sunrise';
+      el.innerHTML=m.arrived?'&#9728; They see your moment now &mdash; <b>'+fmtDelay(t-m.tSent)+'</b> after it passed on Earth.'
+        :'&#9728; Your moment is crossing the gap&hellip; it won’t arrive for '+fmtDelay(m.arrive-t)+'.';}
+    else if(m.from==='me'){el.className='msg me';
+      el.innerHTML=(mode==='native'?'<span class="cap">capsule &middot; self-contained</span>':'')+esc(m.text)+'<span class="stamp">'+(mode==='native'?'sent &middot; no reply expected':'sent &middot; crossing the gap')+'</span>';}
+    else{el.className='msg them';const who=DEST[dest].who;
+      el.innerHTML=(mode==='native'?'<span class="cap">capsule from '+who+'</span>':'')+richText(m.text)+'<span class="stamp">'+who+' &middot; <span class="late">'+(mode==='native'?'composed on arrival':'sent '+fmtAgo(t-m.tSent)+' ago')+'</span></span>';}
+    feed.appendChild(el);}
+  feed.scrollTop=feed.scrollHeight;}
+function esc(s){return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function richText(s){ return s.replace(/Capsule &middot; /,''); }  // native spont lines already styled by .cap
+
+function draw(){const W=cv.width,H=cv.height,d=DEST[dest];
+  x.clearRect(0,0,W,H);
+  for(const s of stars){const tw=0.4+0.6*Math.abs(Math.sin(orbT*6*s.sp+s.tw));x.globalAlpha=tw*0.7;x.fillStyle='#cfe0ff';x.beginPath();x.arc(s.x*W,s.y*H,s.r,0,7);x.fill();}
+  x.globalAlpha=1;
+  if(d.sun){const cx=sceneCx(),cy=H/2;const sg=x.createRadialGradient(cx,cy,0,cx,cy,70);
+    sg.addColorStop(0,'rgba(255,220,150,.9)');sg.addColorStop(.25,'rgba(255,180,90,.35)');sg.addColorStop(1,'rgba(255,170,80,0)');
+    x.fillStyle=sg;x.beginPath();x.arc(cx,cy,70,0,7);x.fill();x.fillStyle='#ffd98a';x.beginPath();x.arc(cx,cy,7,0,7);x.fill();
+    const s=orbScale();x.strokeStyle='rgba(138,151,173,.12)';x.lineWidth=1;
+    x.beginPath();x.ellipse(cx,cy,1*s,1*s*0.62,0,0,7);x.stroke();
+    if(d.R&&!d.star){x.beginPath();x.ellipse(cx,cy,d.R*s,d.R*s*0.62,0,0,7);x.stroke();}}
+  const E=posEarth(),M=posDest();
+  // path (+ interstellar break)
+  x.strokeStyle='rgba(122,167,255,.16)';x.setLineDash([2,8]);x.lineWidth=1.2;x.beginPath();x.moveTo(E.x,E.y);x.lineTo(M.x,M.y);x.stroke();x.setLineDash([]);
+  if(d.star){x.fillStyle='rgba(138,151,173,.5)';x.font='10px "SF Mono",monospace';x.textAlign='center';x.fillText('// 4.24 light-years //',(E.x+M.x)/2,(E.y+M.y)/2-8);}
+  for(let i=flights.length-1;i>=0;i--){const f=flights[i],p=(t-f.tSent)/(f.tArrive-f.tSent);
+    if(p>=1){flights.splice(i,1);continue;}
+    const to=f.from==='me'?M:E;const px=f.p0.x+(to.x-f.p0.x)*p,py=f.p0.y+(to.y-f.p0.y)*p;
+    const col=f.kind==='sunrise'?'255,210,122':f.from==='me'?'111,176,255':'255,138,86';
+    for(let k=1;k<=10;k++){const pp=Math.max(0,p-k*0.015);const tx=f.p0.x+(to.x-f.p0.x)*pp,ty=f.p0.y+(to.y-f.p0.y)*pp;
+      x.globalAlpha=(1-k/11)*.5;x.fillStyle='rgba('+col+',1)';x.beginPath();x.arc(tx,ty,3.2*(1-k/13),0,7);x.fill();}
+    x.globalAlpha=1;const g=x.createRadialGradient(px,py,0,px,py,15);g.addColorStop(0,'rgba('+col+',.95)');g.addColorStop(1,'rgba('+col+',0)');
+    x.fillStyle=g;x.beginPath();x.arc(px,py,15,0,7);x.fill();x.fillStyle='rgba('+col+',1)';x.beginPath();x.arc(px,py,2.6,0,7);x.fill();}
+  planet(E.x,E.y,13,'#2a6cff','#7cb6ff','EARTH','#7cb6ff');
+  if(d.star){ // Proxima as a star
+    const g=x.createRadialGradient(M.x,M.y,0,M.x,M.y,26);g.addColorStop(0,'#ffd9a0');g.addColorStop(.4,'rgba(255,150,90,.5)');g.addColorStop(1,'rgba(255,120,60,0)');
+    x.fillStyle=g;x.beginPath();x.arc(M.x,M.y,26,0,7);x.fill();x.fillStyle='#ffe3b0';x.beginPath();x.arc(M.x,M.y,6,0,7);x.fill();
+    x.fillStyle='#ff9a68';x.font='600 10px "SF Mono",monospace';x.textAlign='center';x.fillText('PROXIMA',M.x,M.y+26);}
+  else planet(M.x,M.y,d.R&&d.R>3?16:10,'#b5431f','#ff9a68',d.label.toUpperCase(),'#ff9a68');}
+function planet(px,py,r,c1,c2,label,lc){const glow=x.createRadialGradient(px,py,0,px,py,r*2.4);
+  glow.addColorStop(0,'rgba('+hex(c2)+',.5)');glow.addColorStop(1,'rgba('+hex(c2)+',0)');x.fillStyle=glow;x.beginPath();x.arc(px,py,r*2.4,0,7);x.fill();
+  const g=x.createRadialGradient(px-r*.35,py-r*.35,r*.2,px,py,r);g.addColorStop(0,c2);g.addColorStop(1,c1);x.fillStyle=g;x.beginPath();x.arc(px,py,r,0,7);x.fill();
+  x.fillStyle=lc;x.font='600 10px "SF Mono",monospace';x.textAlign='center';x.fillText(label,px,py+r+15);}
+function hex(h){const n=parseInt(h.slice(1),16);return (n>>16)+','+((n>>8)&255)+','+(n&255);}
+
+function updateReadout(){const d=oneWay();$('r-dist').textContent=(sepKm()/1e6).toFixed(sepKm()<1e6?3:0)+" million km";
+  $('r-delay').textContent=fmtDelay(d);$('r-round').textContent=fmtDelay(d*2);$('o-sep').textContent=DEST[dest].label+" — "+fmtDelay(d)+" away";}
+setInterval(()=>{$('r-clock').textContent="MISSION T+"+fmtClock(t);updateReadout();},120);
+
+function setDest(dd){dest=dd;document.querySelectorAll('[data-dest]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.dest===dd));
+  $('who').textContent=DEST[dd].who;$('whereName').textContent=DEST[dd].label;
+  $('phaseLabel').textContent=DEST[dd].sun?'Orbital phase — drag the bodies around the Sun':'Orbital phase — (fixed distance)';
+  msgs=[];flights=[];scheduled=[];spontIdx=0;replyIdx=0;t=0;started=false;render();updateReadout();
+  setTimeout(()=>{if(!started){started=true;send(DEST[dd].sun&&dd!=='moon'?"Can you see Earth from your window tonight?":"You there? Testing the delay.");}},900);}
+function setMode(mm){mode=mm;document.querySelectorAll('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.mode===mm));
+  $('modebanner').innerHTML=mm==='native'
+    ? '<b>Latency-native.</b> No message waits for a reply. Each is a self-contained capsule that carries its own context — media designed <i>for</i> the gap, not fighting it.'
+    : '<b>Live chat.</b> Two people trying to take turns across the gap. Watch it desync.';
+  $('input').placeholder=mm==='native'?'Compose a capsule — it won’t wait for a reply…':'Say something…';
+  msgs=[];flights=[];scheduled=[];spontIdx=0;replyIdx=0;t=0;started=false;render();
+  setTimeout(()=>{if(!started){started=true;send(mm==='native'?"Capsule — just checking in. No need to reply.":"You there? Testing the delay.");}},700);}
+
+$('phase').addEventListener('input',e=>{phase=+e.target.value/100;updateReadout();});
+document.querySelectorAll('[data-orb]').forEach(b=>b.addEventListener('click',()=>{orbSpeed=+b.dataset.orb;document.querySelectorAll('[data-orb]').forEach(z=>z.setAttribute('aria-pressed',z===b));}));
+document.querySelectorAll('[data-comp]').forEach(b=>b.addEventListener('click',()=>{COMP=+b.dataset.comp;document.querySelectorAll('[data-comp]').forEach(z=>z.setAttribute('aria-pressed',z===b));}));
+document.querySelectorAll('[data-dest]').forEach(b=>b.addEventListener('click',()=>setDest(b.dataset.dest)));
+document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.mode)));
+$('sound').addEventListener('click',()=>{sound=!sound;$('sound').innerHTML=(sound?'&#128266;':'&#128264;')+' sound';if(sound)beep(520,.12,.04);});
+$('send').addEventListener('click',()=>{if($('input').value.trim()){send($('input').value.trim());$('input').value='';}$('input').focus();});
+$('input').addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.value.trim()){send(e.target.value.trim());e.target.value='';}});
+$('share').addEventListener('click',moment);
+$('reset').addEventListener('click',()=>{msgs=[];flights=[];scheduled=[];spontIdx=0;replyIdx=0;t=0;render();});
+
+updateReadout();render();
+requestAnimationFrame(t0=>{lastReal=t0;requestAnimationFrame(loop);});
+setTimeout(()=>{if(!started){started=true;send("Can you see Earth from your window tonight?");}},1400);
+</script>
+</body>
+</html>
