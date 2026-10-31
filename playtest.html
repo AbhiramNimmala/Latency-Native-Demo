@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gap Playtest</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap">
+<style>
+/* Layout: a single reading column for the protocol, then a wide scorer table. Same night-ink world as the piece, quieter. */
+:root{
+  --void:#08090f; --field:#0f1119; --rule:#262a3b; --ink:#ece6da; --dim:#9296a7; --faint:#5f6375;
+  --dust:#dc9c60; --earth:#a3c6ea; --pass:#7fd1a0; --fail:#e88a7a;
+  --serif:"Newsreader","Iowan Old Style",Georgia,serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--void);color:var(--ink);font-family:var(--serif);font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:68rem;margin:0 auto;padding-block:40px 80px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:40px}
+.col{max-width:40rem}
+h1{font-size:clamp(2.2rem,6vw,3.4rem);font-style:italic;font-weight:400;margin:0;line-height:1;letter-spacing:-.01em}
+h2{font-size:1.5rem;font-style:italic;font-weight:400;margin:0 0 12px;text-wrap:balance}
+p{margin:0 0 12px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dust);margin:0 0 12px}
+.lede{font-size:1.25rem;color:var(--ink);max-width:36rem}
+.dim{color:var(--dim)}
+a{color:var(--earth)}
+code,.mono{font-family:var(--mono);font-size:.82em}
+ol,ul{margin:0 0 12px;padding-left:1.3em}
+li{margin-bottom:6px}
+.script{border-left:2px solid var(--dust);padding:4px 0 4px 16px;font-style:italic;margin:8px 0 14px}
+.tablewrap{overflow-x:auto;border:1px solid var(--rule);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:720px}
+th,td{padding:10px 12px;border-bottom:1px solid var(--rule);text-align:left;vertical-align:top}
+th{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);font-weight:500;background:var(--field)}
+tr:last-child td{border-bottom:0}
+table.fit{min-width:0}
+td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.pill{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;padding:3px 9px;border-radius:999px;border:1px solid var(--rule);white-space:nowrap}
+.pill.pass{color:var(--pass);border-color:color-mix(in srgb,var(--pass) 45%,transparent)}
+.pill.fail{color:var(--fail);border-color:color-mix(in srgb,var(--fail) 45%,transparent)}
+.pill.wait{color:var(--dim)}
+textarea{width:100%;min-height:120px;background:var(--field);border:1px solid var(--rule);border-radius:10px;color:var(--earth);padding:12px;font-family:var(--mono);font-size:12px;resize:vertical}
+textarea:focus,button:focus-visible{outline:2px solid var(--earth);outline-offset:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.btn{background:var(--earth);color:var(--void);border:0;border-radius:9px;padding:10px 16px;font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;font-weight:500}
+.btn.line{background:none;color:var(--dim);border:1px solid var(--rule)}
+.btn.line:hover{color:var(--ink)}
+.tog{display:inline-flex;border:1px solid var(--rule);border-radius:999px;overflow:hidden;margin-top:6px}
+.tog button{background:none;border:0;color:var(--faint);font-family:var(--mono);font-size:10.5px;padding:4px 10px;cursor:pointer}
+.tog button[aria-pressed=true].y{background:color-mix(in srgb,var(--pass) 22%,transparent);color:var(--pass)}
+.tog button[aria-pressed=true].n{background:color-mix(in srgb,var(--fail) 22%,transparent);color:var(--fail)}
+.auto{font-family:var(--mono);font-size:10px;color:var(--faint);margin-left:6px}
+.quote{font-style:italic}
+.ex{font-family:var(--mono);font-size:10px;color:var(--dust);letter-spacing:.06em;text-transform:uppercase}
+.verdict{font-size:1.35rem;font-style:italic;margin:0}
+.report{white-space:pre-wrap;font-family:var(--mono);font-size:12px;background:var(--field);border:1px solid var(--rule);border-radius:10px;padding:14px;color:var(--dim);user-select:all}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(18rem,1fr));gap:24px}
+.grid2>div{min-width:0}
+.msg{font-family:var(--mono);font-size:12px;color:var(--fail)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="col">
+    <p class="eyebrow">The Gap · playtest kit</p>
+    <h1>Does it land?</h1>
+    <p class="lede">Five people, one sitting each, nothing explained. Decide what success means before anyone plays, then let the codes say whether it happened.</p>
+  </header>
+
+  <section class="col">
+    <h2>Pass criteria, fixed before testing</h2>
+    <p class="dim">These are the claims the piece makes. Write them down before the first session and don't move them afterward. A criterion that fails is the most useful result you can get.</p>
+    <div class="tablewrap"><table class="fit">
+      <thead><tr><th>Claim</th><th>Passes when</th></tr></thead>
+      <tbody>
+        <tr><td>The thesis is felt</td><td>At least 4 of 5 one-sentence summaries say that delay breaks a shared moment or real-time talk, or that being together across it needs a different form.</td></tr>
+        <tr><td>Ava has an inner life</td><td>Median “I cared what happened to Ava” is 4 or higher, and at least 4 of 5 testers name a specific detail of her life.</td></tr>
+        <tr><td>The thesis beats carry it</td><td>At least 3 of 5 pick one of the four thesis beats as the moment that hit hardest: the song arriving late, the silence, the letters from the silence, or singing on the beat.</td></tr>
+        <tr><td>The arc holds</td><td>All 5 finish, no tester waits more than 20 seconds at any single prompt (writing the last letter doesn't count), and at most 1 reports being lost.</td></tr>
+        <tr><td>They invest</td><td>At least 3 of 5 write during the silence, which is optional and never prompted beyond the text box.</td></tr>
+        <tr><td>The mechanism is understood</td><td>Median “I understood why the delay changes how people talk” is 4 or higher.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section class="grid2">
+    <div>
+      <h2>Running a session</h2>
+      <ol>
+        <li>Pick five people who haven't heard you describe the project. At most one CS student; mix ages if you can.</li>
+        <li>Use a laptop and headphones in a quiet room. Open the piece with <code>#playtest</code> at the end of its address: <a href="./#playtest">open it in playtest mode</a>.</li>
+        <li>Ask if they're happy to try an interactive piece and answer four anonymous questions. Use initials only.</li>
+        <li>Read this, word for word, then stop talking:
+          <p class="script">This is an interactive piece. Once it starts I can't help, and there are no wrong moves. When it ends it will ask four questions.</p></li>
+        <li>Sit slightly behind them. Note the time of any laugh, sigh, lean-in, phone check or question. Don't answer questions; say “do whatever feels right.”</li>
+        <li>After the four questions, ask aloud: “What would you change?” and “Who would you send this to?” Write down their words.</li>
+        <li>Paste their code into the scorer below.</li>
+      </ol>
+    </div>
+    <div>
+      <h2>What this does and doesn't show</h2>
+      <p>It shows whether the piece does what it claims for five real people: whether they can state the idea, remember Ava as a person, and get through it unaided.</p>
+      <p class="dim">It is informal playtesting of a creative work, not a research study. Five people can't support statistical claims, and their answers shouldn't appear as findings in the paper without a review board's approval. Quote them on your portfolio only with their permission.</p>
+      <p class="dim">The code each tester produces holds their choices, timings, ratings and written answers. It never holds what they typed to Ava.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Scorer</h2>
+    <p class="dim col">Paste up to five codes, one per line. Check the auto-suggested Yes/No marks on each written answer before you trust the verdict.</p>
+    <textarea id="codes" placeholder="GAP1.eyJ2Ijox…" aria-label="Playtest codes, one per line"></textarea>
+    <div class="row" style="margin-top:10px">
+      <button class="btn" id="score" type="button">Score</button>
+      <button class="btn line" id="examples" type="button">Load two example codes (not real testers)</button>
+      <span class="msg" id="err"></span>
+    </div>
+  </section>
+
+  <section id="out">
+    <p class="dim">No codes scored yet. Paste codes above, or load the examples to see a scored report.</p>
+  </section>
+</div>
+
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const MOMENTS = ['The song reaching Ava after the candles were out', 'Answering a storm that had already passed', 'The fourteen days of silence', 'Ava’s letters from the silence', 'Ava singing on the beat, months later', 'Watching the blue sunset with her', 'Writing the last letter', 'None of them'];
+const THESIS_BEATS = new Set([0, 2, 3, 4]);
+const DEC = ['Come home', 'Stay', 'Your call'];
+const THESIS_WORDS = /\b(delay|late|lag|now|moment|real[- ]?time|wait|distance|far|light|gap|together|connect|design|time|apart|present)/i;
+const DETAIL_WORDS = /\b(tomato|greenhouse|teo|grandma|porch|storm|dust|tour|sign|stay|jezero|sunset|phobos|vote|song|birthday|crater|twinkle|plant|garden)/i;
+
+function decode(code){
+  const raw = code.trim().replace(/^GAP1\./, '').replace(/-/g, '+').replace(/_/g, '/');
+  const pad = raw + '='.repeat((4 - raw.length % 4) % 4);
+  return JSON.parse(decodeURIComponent(escape(atob(pad))));
+}
+function encode(obj){ return 'GAP1.' + btoa(unescape(encodeURIComponent(JSON.stringify(obj)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
+
+const EXAMPLES = [
+  { v:1, ex:1, who:'EX1', dur:571, done:1, c:{c1:2,c2:1,c3:0,c4:1}, blk:{n:2,ch:61}, react:3, cap:38, acts:{}, waits:[['c1',6.1],['song',3.2],['c2',4.8],['c3',7.4],['c4',14.9],['songplay',2.1],['sunset',1.8],['cap',31]],
+    about:'Being far away means you can never be in the same moment, so she starts writing letters that don’t need an answer.', avaq:'She grows tomatoes and decided to stay another tour.', mom:'2', care:5, und:5, lost:'' },
+  { v:1, ex:1, who:'EX2', dur:603, done:1, c:{c1:0,c2:0,c3:1,c4:0}, blk:{n:0,ch:0}, react:1, cap:0, acts:{}, waits:[['c1',4.2],['song',22.5],['c2',3.9],['c3',5.0],['c4',9.8],['songplay',3.0],['sunset',2.2],['cap',12]],
+    about:'A story about a girl on Mars and her family.', avaq:'Her grandma had a birthday.', mom:'5', care:3, und:4, lost:'At the song button I wasn’t sure what it did' },
+];
+
+let rows = [];
+function auto(r){ r._t = r._t ?? THESIS_WORDS.test(r.about || ''); r._d = r._d ?? DETAIL_WORDS.test(r.avaq || ''); r._ta = r._ta ?? true; r._da = r._da ?? true; }
+const median = a => { if (!a.length) return null; const s = [...a].sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m-1] + s[m]) / 2; };
+const maxWait = r => Math.max(0, ...(r.waits || []).filter(w => w[0] !== 'cap').map(w => w[1]));   // writing the last letter is reflection, not confusion
+
+function criteria(){
+  const n = rows.length, need = 5;
+  const cnt = f => rows.filter(f).length;
+  const verdict = (ok, enough) => !enough ? 'wait' : ok ? 'pass' : 'fail';
+  const care = median(rows.map(r => r.care).filter(Boolean)), und = median(rows.map(r => r.und).filter(Boolean));
+  const enough = n >= need;
+  return [
+    ['The thesis is felt', `${cnt(r => r._t)} of ${n} summaries state it`, verdict(cnt(r => r._t) >= 4, enough)],
+    ['Ava has an inner life', `median care ${care ?? '–'} · ${cnt(r => r._d)} of ${n} name a detail`, verdict((care ?? 0) >= 4 && cnt(r => r._d) >= 4, enough)],
+    ['The thesis beats carry it', `${cnt(r => THESIS_BEATS.has(+r.mom))} of ${n} pick a thesis beat`, verdict(cnt(r => THESIS_BEATS.has(+r.mom)) >= 3, enough)],
+    ['The arc holds', `${cnt(r => r.done)} of ${n} finished · ${cnt(r => maxWait(r) > 20)} waited >20 s · ${cnt(r => (r.lost || '').trim())} lost`, verdict(cnt(r => r.done) === n && cnt(r => maxWait(r) > 20) === 0 && cnt(r => (r.lost || '').trim()) <= 1, enough)],
+    ['They invest', `${cnt(r => r.blk && r.blk.n > 0)} of ${n} wrote in the silence`, verdict(cnt(r => r.blk && r.blk.n > 0) >= 3, enough)],
+    ['The mechanism is understood', `median ${und ?? '–'}`, verdict((und ?? 0) >= 4, enough)],
+  ];
+}
+
+function tog(i, key){
+  const r = rows[i], v = r[key];
+  return `<span class="tog" role="group"><button type="button" class="y" data-i="${i}" data-k="${key}" data-v="1" aria-pressed="${!!v}">Yes</button><button type="button" class="n" data-i="${i}" data-k="${key}" data-v="0" aria-pressed="${!v}">No</button></span>${r[key + 'a'] ? '<span class="auto">auto · check</span>' : ''}`;
+}
+function render(){
+  if (!rows.length){ $('#out').innerHTML = '<p class="dim">No codes scored yet. Paste codes above, or load the examples to see a scored report.</p>'; return; }
+  const C = criteria(), passed = C.filter(c => c[2] === 'pass').length, pending = C.some(c => c[2] === 'wait');
+  const head = pending
+    ? `${rows.length} of 5 testers scored. The verdict waits for all five.`
+    : passed === C.length ? `All ${C.length} criteria pass.` : `${passed} of ${C.length} criteria pass.`;
+  const exNote = rows.some(r => r.ex) ? '<p class="ex">Includes example codes, not real testers</p>' : '';
+  $('#out').innerHTML = `
+    <p class="eyebrow">Report</p>
+    <p class="verdict">${head}</p>${exNote}
+    <div class="tablewrap" style="margin-top:16px"><table>
+      <thead><tr><th>Claim</th><th>Evidence</th><th>Result</th></tr></thead>
+      <tbody>${C.map(c => `<tr><td>${c[0]}</td><td class="num">${esc(c[1])}</td><td><span class="pill ${c[2]}">${c[2] === 'wait' ? 'needs 5' : c[2]}</span></td></tr>`).join('')}</tbody>
+    </table></div>
+    <h2 style="margin-top:28px">Testers</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Who</th><th>Time</th><th>Decision</th><th>Silence</th><th>Care · understood</th><th>Longest wait</th><th>What it was about</th><th>Ava detail</th><th>Hardest moment</th><th>Lost?</th></tr></thead>
+      <tbody>${rows.map((r, i) => `<tr>
+        <td class="num">${esc(r.who || '–')}${r.ex ? '<br><span class="ex">example</span>' : ''}</td>
+        <td class="num">${r.dur ? Math.floor(r.dur/60) + ' min ' + (r.dur%60) + ' s' : '–'}</td>
+        <td>${r.c && r.c.c4 != null ? DEC[r.c.c4] : '–'}</td>
+        <td class="num">${r.blk ? r.blk.n + ' msg' : '–'}</td>
+        <td class="num">${r.care || '–'} · ${r.und || '–'}</td>
+        <td class="num">${maxWait(r).toFixed(1)} s</td>
+        <td><span class="quote">${esc(r.about || '–')}</span><br>${tog(i, '_t')}</td>
+        <td><span class="quote">${esc(r.avaq || '–')}</span><br>${tog(i, '_d')}</td>
+        <td>${r.mom != null ? esc(MOMENTS[+r.mom]) : '–'}</td>
+        <td>${esc(r.lost || 'No')}</td></tr>`).join('')}</tbody>
+    </table></div>
+    <h2 style="margin-top:28px">Report to share</h2>
+    <p class="report" id="rep">${esc(reportText(C, head))}</p>
+    <div class="row"><button class="btn" id="copy" type="button">Copy report</button></div>`;
+  document.querySelectorAll('.tog button').forEach(b => b.addEventListener('click', () => { const r = rows[+b.dataset.i]; r[b.dataset.k] = b.dataset.v === '1'; r[b.dataset.k + 'a'] = false; render(); }));
+  $('#copy').addEventListener('click', () => {
+    navigator.clipboard.writeText($('#rep').textContent).then(() => { $('#copy').textContent = 'Copied'; }, () => { const rg = document.createRange(); rg.selectNodeContents($('#rep')); const s = getSelection(); s.removeAllRanges(); s.addRange(rg); $('#copy').textContent = 'Selected, press copy'; });
+  });
+}
+function reportText(C, head){
+  const L = [`The Gap · playtest report · ${new Date().toISOString().slice(0, 10)}`, head, ''];
+  C.forEach(c => L.push(`[${c[2].toUpperCase()}] ${c[0]}: ${c[1]}`));
+  L.push('');
+  rows.forEach(r => L.push(`${r.who || '?'}${r.ex ? ' (example)' : ''} · ${r.dur ? Math.round(r.dur/60) + ' min' : '?'} · decision ${r.c && r.c.c4 != null ? DEC[r.c.c4] : '?'} · silence ${r.blk ? r.blk.n : '?'} msg · care ${r.care} · understood ${r.und} · longest wait ${maxWait(r).toFixed(1)} s\n  about: "${r.about}" [${r._t ? 'thesis' : 'no thesis'}]\n  Ava: "${r.avaq}" [${r._d ? 'detail' : 'no detail'}]\n  hardest: ${r.mom != null ? MOMENTS[+r.mom] : '?'}${r.lost ? '\n  lost: ' + r.lost : ''}`));
+  return L.join('\n');
+}
+function score(){
+  $('#err').textContent = '';
+  const lines = $('#codes').value.split(/\s+/).map(s => s.trim()).filter(s => s.startsWith('GAP1.'));
+  if (!lines.length){ $('#err').textContent = 'No codes found. Each code starts with GAP1.'; return; }
+  const out = [], bad = [];
+  lines.slice(0, 5).forEach((l, i) => { try { const r = decode(l); auto(r); out.push(r); } catch(e){ bad.push(i + 1); } });
+  if (bad.length) $('#err').textContent = `Code ${bad.join(', ')} couldn't be read. Check it was copied in full.`;
+  if (lines.length > 5) $('#err').textContent += ' Only the first five codes were scored.';
+  rows = out; render();
+}
+$('#score').addEventListener('click', score);
+$('#examples').addEventListener('click', () => { $('#codes').value = EXAMPLES.map(encode).join('\n'); score(); });
+</script>
+</body>
+</html>
